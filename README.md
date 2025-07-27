@@ -1,13 +1,19 @@
 # Python SCPI tools
 
-Control linux usbtmc devices with SCPI commands.
+Control instruments with SCPI commands.
 
-1. Device permissions
+1. Supported Interfaces
 2. Installing
-3. Usage examples
-4. Common SCPI commands
+3. Console script
+4. Python module
+5. Common SCPI commands
 
-# Device permissions
+# Supported Interfaces
+
+## USB
+Windows: Not available
+
+Linux: Using usbtmc driver. Read write to /dev/usbtmc*
 
 Create a new udev rule
 ```bash
@@ -37,6 +43,21 @@ You should see something like this:
 uid=1000(spamuser) gid=1000(spamuser) groups=1000(spamuser)27(sudo)100(users),1002(usbtmc)
 ```
 
+## Serial
+Using pyserial
+
+Windows: COM*
+
+Install serial device drivers.
+
+Linux: /dev/tty*
+
+Add yourself to the dialout group and relog. Check with "id" command to see if you are now part of the dialout group.
+
+```bash
+sudo usermod -a -G dialout "$USER"
+```
+
 # Installing
 
 Optional: create a virtual environment and activate it
@@ -50,9 +71,9 @@ Install using
 python setup.py install
 ```
 
-# Usage examples
+# Console script
 
-The basic command structure is
+The basic console script structure is
 scpi [--devices [DEVICES]] [queries ...]
 
 Where DEVICES is the path to your device, i.e. /dev/usbtmc0, or multiple devices using wildcards like /dev/usbtmc[0-9]*
@@ -63,12 +84,12 @@ The list of queries will be sent to each device. If no query is entered, the def
 To scan for instruments, you can use
 
 ```bash
-scpi
+scpi --devices=/dev/usbtmc*
 ```
 
-This sends the "*IDN?" query to each device.
+This sends the "*IDN?" query to all usbtmc devices.
 
-Should return something like
+If your device is /dev/usbtmc5, this should return something like
 ```python
 [{'device': '/dev/usbtmc5', '*IDN?': 'Agilent Technologies,34405A,MY52240109,1.47-3.13'}]
 ```
@@ -91,43 +112,23 @@ Should return something like
 ```
 Notice how the second query is suffixed with an underscore. This is because python dicts cannot have multiple keys with the same name. For each subsequent query an underscore is added to the end of the key.
 
+## Watch a measurement
 
-# Common SCPI commands
+Most linux distros include the "watch" command. This is useful for watching a measured value change. You can set the watch interval in seconds using the -n parameter.
+
+
+```bash
+watch -n 0.5 scpi MEAS:VOLT:DC?
 ```
-*CLS
+# Python module
 
-Clears the instrument status byte by emptying the error queue and clearing all event registers. Also cancels any preceding *OPC command or query.
-*ESE - Event Status Enable
+To connect to a single device use the following example. Make sure to change /dev/usbtmc0 to your device.
 
-Sets bits in the standard event status enable register.
-*ESE? - Event Status Enable Query
+```python
+import scpitools as scpi
 
-Returns the results of the standard event enable register. The register is cleared after reading it.
-*ESR? - Event Status Enable Register
-
-Reads and clears event status enable register.
-*IDN? - Identify
-
-Returns a string that uniquely identifies the FieldFox. The string is of the form "Keysight Technologies",<model number>,<serial number>,<software revision> and so forth.
-*OPC - Operation complete command
-
-Generates the OPC message in the standard event status register when all pending overlapped operations have been completed (for example, a sweep, or a Default).
-*OPC? - Operation complete query
-
-Returns an ASCII "+1" when all pending overlapped operations have been completed.
-*OPT? - Identify Options Query
-
-Returns a string identifying the analyzer option configuration.
-*RST - Reset
-
-Executes a device reset and cancels any pending *OPC command or query. All trigger features in HOLD. The contents of the FieldFox non-volatile memory are not affected by this command.
-*SRE - Service Request Enable
-
-Before reading a status register, bits must be enabled. This command enables bits in the service request register. The current setting is saved in non-volatile memory.
-*SRE? - Service Request Enable Query
-
-Reads the current state of the service request enable register. The register is cleared after reading it.
-*WAI - Wait
-
-Prohibits the instrument from executing any new commands until all pending overlapped commands have been completed.
+device = scpi.ScpiDevice('/dev/usbtmc0')
+print(device.query('*IDN?'))
 ```
+
+More examples are located in the ./examples/ directory.

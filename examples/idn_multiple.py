@@ -1,4 +1,6 @@
-""" MIT License
+""" Request basic info from multiple scpi devices.
+
+    MIT License
 
     Copyright (c) 2025 Koen van Vliet
 
@@ -20,4 +22,17 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 """
-from .scpidevice import ScpiDevice
+import scpitools as scpi
+import glob
+
+timeout = 2
+
+for device_group in ['/dev/ttyS[0-9]*', '/dev/ttyUSB[0-9]*', '/dev/ttyACM[0-9]*', '/dev/usbtmc[0-9]*']:
+    for device_path in glob.glob(device_group):
+        try:
+            device = scpi.ScpiDevice(device_path, timeout=timeout)
+            response = device.query('*IDN?')
+            print(f'"{device_path}","*IDN?"', f'response is "{response}"' if response else 'response timed out')
+        except:
+            # Ignore devices that cannot be configured
+            pass

@@ -1,28 +1,38 @@
 #!/bin/python
+""" SCPI Tools console script
 
+    MIT License
+
+    Copyright (c) 2025 Koen van Vliet
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+"""
+
+import argparse
+import time
+import logging
 import glob
+from .scpidevice import ScpiDevice
 
-def send_scpi_command(device_path, command):
-    with open(device_path, 'wb') as dev:
-        dev.write((command + '\n').encode('utf-8'))
-
-    with open(device_path, 'rb', buffering=0) as dev:
-        response = bytearray()
-        while True:
-            b = dev.read(1)
-            if not b:
-                break  # EOF or timeout
-            response += b
-            if b == b'\n':
-                break
-        return response.decode().strip()
+# TODO provide a resource manager, which can scan for devices on various interfaces
 
 def main():
-    import argparse
-    import time
-    import logging
-    
-
     SLEEP_COMMAND = 'SLEEP:'
 
     parser = argparse.ArgumentParser()
@@ -38,7 +48,7 @@ def main():
         level = logging.WARNING
     logging.basicConfig(level=level)
     
-    instruments = []
+    results = []
 
     queries = args.queries
     if isinstance(queries, str):
@@ -46,7 +56,7 @@ def main():
 
     for device in glob.glob(args.devices):
         
-            instrument = {'device':device}
+            result = {'device':device}
             for query in queries:
                 logging.info(query)
                 if query.startswith(SLEEP_COMMAND):
@@ -54,16 +64,17 @@ def main():
                     logging.debug(f"Sleep for {seconds} seconds...")
                     time.sleep(seconds)
                 else:
-                    response = send_scpi_command(device, query)
-                    if query in instrument.keys():
+                    response = ScpiDevice(device, timeout=5).query(query)
+
+                    if query in result.keys():
                         query+="_"
                     
-                    instrument.update({query:response})
+                    result.update({query:response})
 
-            instruments.append(instrument)
+            results.append(result)
                 
 
-    print(instruments)
+    print(results)
 
 if __name__ == "__main__":
     exit(main())

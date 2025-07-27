@@ -1,4 +1,6 @@
-""" MIT License
+""" Request basic info from a single scpi device.
+
+    MIT License
 
     Copyright (c) 2025 Koen van Vliet
 
@@ -20,4 +22,7 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 """
-from .scpidevice import ScpiDevice
+import scpitools as scpi
+
+device = scpi.ScpiDevice('/dev/usbtmc0')
+print(device.query('*IDN?'))
