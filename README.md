@@ -39,10 +39,10 @@ uid=1000(spamuser) gid=1000(spamuser) groups=1000(spamuser)27(sudo)100(users),10
 
 # Installing
 
-You will need setuptools
-
-```bash
-python -m pip install setuptools
+Optional: create a virtual environment and activate it
+``` bash
+python -m venv .venv
+source .venv/bin/activate
 ```
 
 Install using
