@@ -1,11 +1,13 @@
 # Python SCPI tools
 
+Control linux usbtmc devices with SCPI commands.
+
 1. Device permissions
 2. Installing
 3. Usage examples
 4. Common SCPI commands
 
-# 1. Device permissions
+# Device permissions
 
 Create a new udev rule
 ```bash
@@ -35,7 +37,7 @@ You should see something like this:
 uid=1000(spamuser) gid=1000(spamuser) groups=1000(spamuser)27(sudo)100(users),1002(usbtmc)
 ```
 
-# 2. Installing
+# Installing
 
 You will need setuptools
 
@@ -48,19 +50,49 @@ Install using
 python setup.py install
 ```
 
-# 3. Usage examples
+# Usage examples
+
+The basic command structure is
+scpi [--devices [DEVICES]] [queries ...]
+
+Where DEVICES is the path to your device, i.e. /dev/usbtmc0, or multiple devices using wildcards like /dev/usbtmc[0-9]*
+
+The list of queries will be sent to each device. If no query is entered, the default query "*IDN?" is sent.
 
 ## Scan for instruments
+To scan for instruments, you can use
+
 ```bash
 scpi
 ```
 
+This sends the "*IDN?" query to each device.
+
 Should return something like
 ```python
-[{'device': '/dev/usbtmc5', 'idn': 'Agilent Technologies,34405A,MY52240109,1.47-3.13'}]
+[{'device': '/dev/usbtmc5', '*IDN?': 'Agilent Technologies,34405A,MY52240109,1.47-3.13'}]
 ```
 
-# 4. Common SCPI commands
+## Measure voltage
+To measure DC voltage
+
+```bash
+scpi MEAS:VOLT:DC?
+```
+## Sleep between queries
+Sometimes you need to introduce a delay between two commands. For this, the SLEEP:[seconds] command is introduced. This does not actually get sent to the instrument, but is interpreted by the program. To sleep for 0.5 seconds between two measurements
+```
+scpi MEAS:VOLT:DC? SLEEP:0.5 MEAS:VOLT:DC?
+```
+
+Should return something like
+```
+[{'device': '/dev/usbtmc5', 'MEAS:VOLT:DC?': '+6.31000000E-03', 'MEAS:VOLT:DC?_': '+1.48500000E-02'}]
+```
+Notice how the second query is suffixed with an underscore. This is because python dicts cannot have multiple keys with the same name. For each subsequent query an underscore is added to the end of the key.
+
+
+# Common SCPI commands
 ```
 *CLS
 
