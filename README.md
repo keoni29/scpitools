@@ -1,6 +1,5 @@
 # Python SCPI tools
-
-Control instruments with SCPI commands.
+Minimalist library for low level control of devices trough SCPI commands.
 
 ```python
 >>> import scpitools as scpi
