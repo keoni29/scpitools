@@ -23,18 +23,55 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
  */
+#include <avr/boot.h>
+
+#define SW_VERSION "1.0"
+
 #define BUFFER_SIZE 256
 #define LED_PIN 9
-
-const char cmdIdn[] = "*IDN?";
-const char cmdVolt[] = "MEAS:VOLT:DC?";
-const char cmdErr[] = "SYST:ERR?";
 
 typedef enum{
   NO_ERROR = 0,
   COMMAND_ERROR = -100,
   INTERNAL_FIRMWARE_ERROR = -300,
 }Error;
+
+const char cmdIdn[] = "*IDN?";
+const char cmdVolt[] = "MEAS:VOLT:DC?";
+const char cmdErr[] = "SYST:ERR?";
+
+uint32_t deviceSignature; // Unique to the type of microcontroller used
+uint32_t serialNumberL;
+uint32_t serialNumberH;
+
+uint32_t getDeviceSignature(void){
+  deviceSignature = boot_signature_byte_get(0x0000);
+  deviceSignature <<= 8;
+  deviceSignature += boot_signature_byte_get(0x0002);
+  deviceSignature <<= 8;
+  deviceSignature += boot_signature_byte_get(0x0004);
+}
+
+void getSerialNumber(void) {
+  serialNumberL = boot_signature_byte_get(0x000F);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x000E);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x0010);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x0010);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x0010);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x0010);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x0010);
+  serialNumberL <<= 8;
+  serialNumberL += boot_signature_byte_get(0x0010);
+  serialNumberL <<= 8;
+  
+  serialNumberH = boot_signature_byte_get(0x0010);
+}
 
 void errorBeep(void){
   /// TODO * loud beep noise *
@@ -57,7 +94,9 @@ bool startswith(const char *pre, const char *str)
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  pinMode(LED_PIN, OUTPUT);  
+  pinMode(LED_PIN, OUTPUT);
+  getDeviceSignature();
+  getSerialNumber();
 }
 
 void loop() {
@@ -78,7 +117,13 @@ void loop() {
       Serial.println(last_error);
       last_error = NO_ERROR;
     } else if (startswith(cmdIdn, command)) {
-      Serial.println("Arduino,Pro Micro,serial,hwversion-swversion");
+      Serial.print("Arduino,0x");
+      Serial.print(deviceSignature,HEX);
+      Serial.print(",0x");
+      Serial.print(serialNumberH,HEX);
+      Serial.print(serialNumberL,HEX);
+      Serial.print(",");
+      Serial.println(SW_VERSION);
     } else if (startswith(cmdVolt, command)) {
       float value = (5.0 / 1024) * analogRead(A0);
       
